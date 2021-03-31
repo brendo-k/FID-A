@@ -20,7 +20,7 @@ function [TrajectoryStruct] = CreateTrajectory(Trajectory, par)
                                 + (finalKSpaceTraj(2,1) - finalKSpaceTraj(2,2))^2);
         %voxel size
         TrajectoryStruct.voxel_size = 1/par.kMax;
-        TrajectoryStruct.total_points = size(finalKSpaceTraj,1);
+        TrajectoryStruct.total_points = size(finalKSpaceTraj,1);/?fbclid=IwAR0q-FAu3O-nlsBTvStKzXvacMGRTqu9b2SYOIL4brg2_xb0NeQ7A_6IDus
         
         %number of ramping points
         TrajectoryStruct.ramping_points = rampingPoints;
