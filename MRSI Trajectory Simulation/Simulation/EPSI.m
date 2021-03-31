@@ -3,15 +3,17 @@
 %gradients).
 %Input: par (optional)
 %           consists of fields:
-%             dwellTime: dwell time in seconds
-%             Fov: desired fov size in meters
-%             imageSize: desired resolution. Array with 2 entries corresponding to x and y axises respectivly
-%             readOutTime: readout time in the spectral dimension
-%             repetitionTime: Time between each excitation
-
-%TODO: Calculate ramping time to each k space position to add to total scan
-%time
-            
+%               dwellTime: dwell time in seconds
+%               Fov: desired fov size in meters
+%               imageSize: desired resolution. Array with 2 entries corresponding to x and y axises respectivly
+%               readOutTime: readout time in the spectral dimension
+%               repetitionTime: Time between each excitation
+%
+%Output:    Traj: 2d matrix of the resulting K-space trajectory from the input
+%              params. Dimensions are excitation number and readout for the frist and
+%              second dimensions respectivly.
+%           scanTime: Resulting scan time from trajectory. In seconds
+%           par: paramaters (same fields as above) used for EPSI simulation   
 
 function [traj, scanTime, par] = EPSI(par)
 
@@ -35,17 +37,25 @@ function [traj, scanTime, par] = EPSI(par)
     dwellTime = par.dwellTime; %[s]
     sw = 1/(dwellTime*par.imageSize(1)*2); %[Hz]
     
-    
     %calculating trajectory for each shot
     kSpaceX = -FovKX/2 + deltaKX/2:deltaKX:FovKX/2 - deltaKX/2;
     kSpaceY = -FovKY/2 + deltaKY/2:deltaKY:FovKY/2 - deltaKY/2;
     
+    %initalize empty array for trajectory 
     traj = zeros(par.imageSize(2), par.imageSize(1)*par.spectralPoints);
     
+    %readout along the first dimension
     for j = 1:par.imageSize(2)
-        traj(j,:) = repmat(kSpaceX, [1,par.spectralPoints]) + 1i*kSpaceY(j);
+        %multiple reads of the x axis
+        traj(j,:) = repmat(kSpaceX, [1,par.spectralPoints]);
+        
+        %add the corresponding y position
+        traj(j,:) = traj(j,:) + 1i*kSpaceY(j);
     end
     
+    %Calculate scan time.
+    %(dwelltime * imagesize * 2) is the time to get back to the same position
+    %in k space which needs to be repeated equivalently to spectral points.
     scanTime = (dwellTime*par.imageSize(1)*2*par.spectralPoints+par.repetitionTime)*par.imageSize(2);
 
 end
