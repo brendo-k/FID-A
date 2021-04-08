@@ -5,7 +5,7 @@
 %           consists of fields:
 %               dwellTime: dwell time in seconds
 %               Fov: desired fov size in meters
-%               imageSize: desired resolution. Array with 2 entries corresponding to x and y axises respectivly
+%               imageSize: desired resolution. Array with 3 entries corresponding to x, y,and spectral axises respectivly
 %               readOutTime: readout time in the spectral dimension
 %               repetitionTime: Time between each excitation
 %
@@ -20,8 +20,7 @@ function [traj, scanTime, par] = EPSI(par)
     if(nargin < 1)
         par.dwellTime = 31.25e-6; %[s]
         par.Fov = [0.18, 0.18]; %FoV in m in the x and y directions
-        par.imageSize = [32, 32]; %voxels resolution in the x and y direction
-        par.spectralPoints = 40; % Number of readout points in the spectral dimension
+        par.imageSize = [32, 32, 40]; %voxels resolution in the x and y and spectral dimension
         par.repetitionTime = 1; %s
     end
     %calculating the same image parameters as the default parameters in Rosette.m 
@@ -47,7 +46,7 @@ function [traj, scanTime, par] = EPSI(par)
     %readout along the first dimension
     for j = 1:par.imageSize(2)
         %multiple reads of the x axis
-        traj(j,:) = repmat(kSpaceX, [1,par.spectralPoints]);
+        traj(j,:) = repmat(kSpaceX, [1,par.imageSize(3)]);
         
         %add the corresponding y position
         traj(j,:) = traj(j,:) + 1i*kSpaceY(j);
