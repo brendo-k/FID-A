@@ -45,7 +45,6 @@ function [traj, scanTime, par] = cartMRSI(par)
     
     traj = reshape(traj, [excite ,1]);
     
-    
     %add plus one because the zeroth point is counted
     traj = repmat(traj, [1,readOutTime/dwellTime + 1]);
     

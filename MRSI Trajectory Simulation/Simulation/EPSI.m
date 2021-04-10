@@ -23,7 +23,6 @@ function [traj, scanTime, par] = EPSI(par)
         par.imageSize = [32, 32, 40]; %voxels resolution in the x and y and spectral dimension
         par.repetitionTime = 1; %s
     end
-    %calculating the same image parameters as the default parameters in Rosette.m 
 
     %updating local variables from parameters
     Fov = par.Fov;
@@ -34,14 +33,14 @@ function [traj, scanTime, par] = EPSI(par)
     FovKX = 1/deltaFovX; %[1/m]
     FovKY = 1/deltaFovY; %[1/m]
     dwellTime = par.dwellTime; %[s]
-    sw = 1/(dwellTime*par.imageSize(1)*2); %[Hz]
+    par.sw = 1/(dwellTime*par.imageSize(1)*2); %[Hz]
     
     %calculating trajectory for each shot
     kSpaceX = -FovKX/2 + deltaKX/2:deltaKX:FovKX/2 - deltaKX/2;
     kSpaceY = -FovKY/2 + deltaKY/2:deltaKY:FovKY/2 - deltaKY/2;
     
     %initalize empty array for trajectory 
-    traj = zeros(par.imageSize(2), par.imageSize(1)*par.spectralPoints);
+    traj = zeros(par.imageSize(2), par.imageSize(1)*par.imageSize(3));
     
     %readout along the first dimension
     for j = 1:par.imageSize(2)
@@ -53,9 +52,9 @@ function [traj, scanTime, par] = EPSI(par)
     end
     
     %Calculate scan time.
-    %(dwelltime * imagesize * 2) is the time to get back to the same position
+    %(dwelltime * imageSize * 2) is the time to get back to the same position
     %in k space which needs to be repeated equivalently to spectral points.
-    scanTime = (dwellTime*par.imageSize(1)*2*par.spectralPoints+par.repetitionTime)*par.imageSize(2);
+    scanTime = (dwellTime*par.imageSize(1)*2*par.imageSize(3)+par.repetitionTime)*par.imageSize(2);
 
 end
     
