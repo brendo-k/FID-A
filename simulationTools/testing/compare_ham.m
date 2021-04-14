@@ -12,7 +12,7 @@ end
 %% Test 1: Ix
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Ix , H_two(i).Ix))
@@ -24,7 +24,7 @@ end
 %% Test 2: Ix
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Iy , H_two(i).Iy))
@@ -36,7 +36,7 @@ end
 %% Test 3: Iz
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Iz , H_two(i).Iz))
@@ -48,7 +48,7 @@ end
 %% Test 4: Fx
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Fx , H_two(i).Fx))
@@ -60,7 +60,7 @@ end
 %% Test 5: Fy
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Fy , H_two(i).Fy))
@@ -72,12 +72,38 @@ end
 %% Test 6: Fz
 for i = 1:length(metabolites)
     [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
-    [H_two, d_two] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
     if length(H_one) > 1     
         for i = 1:length(H_one)
             assert(isequal(H_one(i).Fz , H_two(i).Fz))
         end
     else
         assert(isequal(H_one.Iz , H_two.Iz))
+    end
+end
+
+%% Test 6: HABJonly
+for i = 1:length(metabolites)
+    [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
+    if length(H_one) > 1     
+        for i = 1:length(H_one)
+            assert(isequal(H_one(i).HABJonly , H_two(i).HABJonly))
+        end
+    else
+        assert(isequal(H_one.HABJonly , H_two.HABJonly))
+    end
+end
+
+%% Test 6: HAB
+for i = 1:length(metabolites)
+    [H_one, d_one] = sim_Hamiltonian(metabolites{i}, 3);
+    [H_two, d_two] = sim_Hamiltonian2(metabolites{i}, 3);
+    if length(H_one) > 1     
+        for i = 1:length(H_one)
+            assert(isequal(H_one(i).HAB , H_two(i).HAB))
+        end
+    else
+        assert(isequal(H_one.HAB , H_two.HAB))
     end
 end

@@ -36,6 +36,7 @@ function [H,d] = sim_Hamiltonian2(sys,Bfield)
         H(n).nspins=nspins;
         H(n).Bfield=Bfield;
 
+        %Preallocate space for varibles
         H(n).Fz = zeros(2^nspins);
         H(n).Fy = zeros(2^nspins);
         H(n).Fx = zeros(2^nspins);
@@ -43,13 +44,8 @@ function [H,d] = sim_Hamiltonian2(sys,Bfield)
         H(n).Ix = zeros(2^nspins,2^nspins,nspins);
         H(n).Iy = zeros(2^nspins,2^nspins,nspins);
         H(n).Iz = zeros(2^nspins,2^nspins,nspins);
-
-        d{n}=H(n).Fz;
-
-        %Store the spin-system scaling factor in the H structure, and scale the
-        %density matrix for each part of the spin system:
-        H(n).scaleFactor=sys(n).scaleFactor;
-        d{n}=d{n}*sys(n).scaleFactor;
+        H(n).HABJonly = zeros(2^nspins,2^nspins);
+      
 
         %Basis states
         I0=[1 0;0 1];
@@ -57,17 +53,24 @@ function [H,d] = sim_Hamiltonian2(sys,Bfield)
         Iy=(1i/2)*[0 1;-1 0];
         Iz=(1/2)*[-1 0;0 1];
 
+        %loop through all spins
         for spin = 1:nspins
+            
             if spin == 1
+                %if spin is one, set temp to be Ix, Iy, Iz
                 temp_Ix = Ix;
                 temp_Iy = Iy;
                 temp_Iz = Iz;
             else
+                %else set to be I0
                 temp_Ix = I0;
                 temp_Iy = I0;
                 temp_Iz = I0;
             end
+            
+            %loop through spins again starting at 2
             for pos = 2:nspins
+                
                 if spin == pos
                     temp_Ix = kron(temp_Ix, Ix);
                     temp_Iy = kron(temp_Iy, Iy);
@@ -78,23 +81,42 @@ function [H,d] = sim_Hamiltonian2(sys,Bfield)
                     temp_Iz = kron(temp_Iz, I0);
                 end
             end
+            %Safe final temp value to Ix, Iy, Iz based on spin number
             H(n).Ix(:,:,spin) = temp_Ix;
             H(n).Iy(:,:,spin) = temp_Iy;
             H(n).Iz(:,:,spin) = temp_Iz;
         end
+        %Sum along the third dimension to get F 
         H(n).Fx = sum(H(n).Ix, 3);
         H(n).Fy = sum(H(n).Iy, 3);
         H(n).Fz = sum(H(n).Iz, 3);
-
-            %Now the resonance component - each spin has a resonance frequency
-            %omega0-chemshift. This component is resfreq*H.Iz for each spin. In fact
-            %we assume we are in a frame rotating at omega0 so we only have to
-            %include H.shifts*H.Iz for each spin. This means we are not drastically
-            %undersampled as we would otherwise be.
-            %     for e=1:nspins
-            %         rescomp = (H(n).shifts_rads(e))*H(n).basis(:,:,e);
-            %         H(n).HAB(:,:) = H(n).HAB(:,:) + diagonal(:,:).*rescomp;
-            %     end
+        
+        d{n} = H(n).Fz;
+        %Store the spin-system scaling factor in the H structure, and scale the
+        %density matrix for each part of the spin system:
+        H(n).scaleFactor=sys(n).scaleFactor;
+        d{n}=d{n}*sys(n).scaleFactor;
+        
+        I0=[1 0;0 1];
+        Ix=0.5*[0 1;1 0];
+        Iy=(1i/2)*[0 -1;1 0];
+        Iz=(1/2)*[1 0;0 -1];
+        
+        %Multiply shift rads by Iz
+        for spin = 1:nspins
+            H(n).HAB = H(n).HAB + H(n).shifts_rads(spin)*H(n).Iz(:,:,spin);
+        end
+        
+        
+        %For every J(i,j) multiply by IS of spins I and J.
+        for i = 1:nspins
+            for j = i+1:nspins
+                IS = H(n).Iy(:,:,i)*H(n).Iy(:,:,j) + H(n).Iz(:,:,i)*H(n).Iz(:,:,j) + H(n).Ix(:,:,i)*H(n).Ix(:,:,j);
+                JIS = sys(n).J(i,j)*2*pi*IS;
+                H(n).HABJonly = H(n).HABJonly + JIS;
+                H(n).HAB = H(n).HAB + JIS;
+            end
+        end
     end
 end
 
