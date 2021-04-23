@@ -15,13 +15,12 @@
 %           scanTime: Resulting scan time from trajectory. In seconds
 %           par: paramaters (same fields as above) used for EPSI simulation   
 
-function [traj, scanTime, par] = EPSI(par)
+function [obj] = EPSI(par)
 
     if(nargin < 1)
         par.dwellTime = 31.25e-6; %[s]
         par.Fov = [0.18, 0.18]; %FoV in m in the x and y directions
         par.imageSize = [32, 32, 40]; %voxels resolution in the x and y and spectral dimension
-        par.repetitionTime = 1; %s
     end
 
     %updating local variables from parameters
@@ -54,7 +53,6 @@ function [traj, scanTime, par] = EPSI(par)
     %Calculate scan time.
     %(dwelltime * imageSize * 2) is the time to get back to the same position
     %in k space which needs to be repeated equivalently to spectral points.
-    scanTime = (dwellTime*par.imageSize(1)*2*par.imageSize(3)+par.repetitionTime)*par.imageSize(2);
-
+    obj = Trajectory(traj, par.imageSize, par.Fov, par.dwellTime, ["x", "y"], sw);
 end
     
