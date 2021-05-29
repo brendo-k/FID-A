@@ -8,7 +8,8 @@
 %
 %
 % INPUT:
-% mriFileName           = char array or string representing the file path to mriFile
+% mriFileName           = char array or string representing the file path
+%                         to mriFile in nifti format
 % in                    = MRSI structure to overlay on MRI
 % coilNum               = coilNum to plot if coils have not been combined
 %                       (default value = 1)

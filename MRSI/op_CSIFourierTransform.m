@@ -33,7 +33,7 @@ function [out] = op_CSIFourierTransform(out, settings)
             settings.spectralFT = 1;
         end
     end
-    if ~isfield(settings, 'spatialFt')
+    if ~isfield(settings, 'spatialFT')
         if(out.flags.spatialFT == 0)
             settings.spatialFT = 1;
         end
@@ -96,8 +96,14 @@ function [out] = op_CSIFourierTransform(out, settings)
             %applying the fast fourier transform if k space is cartesian
             disp('Applying fast fourier transform');
             
-            out.specs = fftshift(fft(out.specs, [], out.dims.x),out.dims.x);
-            out.specs = fftshift(fft(out.specs, [], out.dims.y),out.dims.y);
+            if(mod(size(out.specs, out.dims.x),2) == 1)
+                out.specs = circshift(out.specs,1, out.dims.x);
+            end
+            out.specs = fftshift(ifft(fftshift(out.specs, out.dims.x), [], out.dims.x), out.dims.x);
+            if(mod(size(out.specs, out.dims.y),2) == 1)
+                out.specs = circshift(out.specs,1, out.dims.y);
+            end
+            out.specs = fftshift(ifft(fftshift(out.specs, out.dims.y), [], out.dims.y), out.dims.y);
         else
             %applying the slow fourier transform if the k space is non
             %cartesian
@@ -157,11 +163,12 @@ function [out] = op_CSIFourierTransform(out, settings)
 
             
         end
-    end
+    
     toc
     out.flags.spatialFT = 1;
     out.xCoordinates = xCoordinates;
     out.yCoordinates = yCoordinates;
+    end
     
 end
 

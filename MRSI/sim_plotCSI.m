@@ -19,18 +19,40 @@
 % displays graph of processed MRSI data in twix struct. 
 
 
-function sim_plotCSI(in, coilNum)
+function sim_plotCSI(in, complex_plot, coilNum)
 
 %check to see if coilNum has been defined
 if ~exist('coilNum','var')
     coilNum = 1;
 end
- 
+
+if ~exist('complex_plot','var')
+    complex_plot = 'real';
+end
+
+if ~strcmpi(complex_plot, 'real') && ~strcmpi(complex_plot, 'imag') && ~strcmpi(complex_plot, 'abs')
+    error("please input 'real', 'imag' or 'abs'")
+end
+
+%get lowercase
+complex_plot = lower(complex_plot);
 
 if(in.dims.coils == 0)
-    yrange=max(real(in.specs),[],'all') - min(real(in.specs),[],'all');
+    if(strcmp(complex_plot, 'real'))
+        yrange=max(real(in.specs),[],'all') - min(real(in.specs),[],'all');
+    elseif (strcmp(complex_plot, 'imag'))
+        yrange=max(imag(in.specs),[],'all') - min(imag(in.specs),[],'all');
+    else
+        yrange=max(abs(in.specs),[],'all') - min(abs(in.specs),[],'all');
+    end
 else
-    yrange=max(real(in.specs(:,coilNum,:,:)),[],'all') - min(real(in.specs(:,coilNum,:,:)),[],'all');
+    if(strcmp(complex_plot, 'real'))
+        yrange=max(real(in.specs(:,coilNum,:,:)),[],'all') - min(real(in.specs(:,coilNum,:,:)),[],'all');
+    elseif (strcmp(complex_plot, 'imag'))
+        yrange=max(imag(in.specs(:,coilNum,:,:)),[],'all') - min(imag(in.specs(:,coilNum,:,:)),[],'all');
+    else
+        yrange=max(abs(in.specs(:,coilNum,:,:)),[],'all') - min(abs(in.specs(:,coilNum,:,:)),[],'all');
+    end
 end
 
 %scale factors to fit at each (x,y) coordinates
@@ -66,7 +88,14 @@ for x = 1:size(in.specs,in.dims.x)
         %now shift it to the correct x-position;
         time = time + (x-1)*in.deltaX - (0.8*in.deltaX)/2 + in.xCoordinates(1);
         %Now start plotting
-        plot(time,(tempSpec(:,x,y,coilNum) + ((y-1)*in.deltaY + in.yCoordinates(1))));
+        if(strcmp(complex_plot, 'real'))
+            plot(time, real(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+        elseif(strcmp(complex_plot, 'imag'))
+            plot(time, imag(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+        else
+            plot(time, real(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+        end
+        
     end
 end
 hold off;

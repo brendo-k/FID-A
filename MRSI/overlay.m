@@ -52,11 +52,26 @@ bb = st.bb;
 
 
 %get tne yrange for scaling of the y axis to plot the specs 
-if(csi_obj.dims.coils == 0)
-    yrange=max(real(csi_obj.specs),[],'all') - min(real(csi_obj.specs),[],'all');
+if strcmp(plot_type, 'real')
+    if(csi_obj.dims.coils == 0)
+        yrange=max(real(csi_obj.specs),[],'all') - min(real(csi_obj.specs),[],'all');
+    else
+        yrange=max(real(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(real(csi_obj.specs(:,coilNum,:,:)),[],'all');
+    end
+elseif strcmp(plot_type, 'imag')
+    if(csi_obj.dims.coils == 0)
+        yrange=max(imag(csi_obj.specs),[],'all') - min(imag(csi_obj.specs),[],'all');
+    else
+        yrange=max(imag(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(imag(csi_obj.specs(:,coilNum,:,:)),[],'all');
+    end
 else
-    yrange=max(real(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(real(csi_obj.specs(:,coilNum,:,:)),[],'all');
+    if(csi_obj.dims.coils == 0)
+        yrange=max(abs(csi_obj.specs),[],'all') - min(abs(csi_obj.specs),[],'all');
+    else
+        yrange=max(abs(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(abs(csi_obj.specs(:,coilNum,:,:)),[],'all');
+    end
 end
+    
 
 %scale factors to fit the spectral dimension at each (x,y) coordinates
 scalefactorX=(0.8*csi_obj.deltaX)/max(csi_obj.t);
@@ -69,8 +84,8 @@ ydim = csi_obj.dims.y;
 %reduce the spec scales by scalefactorY
 tempSpec=op_ampScale(csi_obj,scalefactorY);
 
-%reverse the y dimension so plotting anterior = +y and posterior = -y
-tempSpec.specs = flip(tempSpec.specs, ydim);
+% %reverse the y dimension so plotting anterior = +y and posterior = -y
+% tempSpec.specs = flip(tempSpec.specs, ydim);
 
 %rearange dimensions so that we plot time, x, y
 dimsToPlot = [csi_obj.dims.t, xdim, ydim];

@@ -33,6 +33,12 @@ classdef Trajectory
             obj.dwellTime = dwellTime;
             obj.K_coordinates.k{1} = -obj.FovK.x/2+obj.delta_K.x/2:obj.delta_K.x:obj.FovK.x/2-obj.delta_K.x/2;
             obj.K_coordinates.k{2} = -obj.FovK.y/2+obj.delta_K.y/2:obj.delta_K.y:obj.FovK.y/2-obj.delta_K.y/2;
+            if(isnan(obj.K_coordinates.k{1}))
+                obj.K_coordinates.k{1} = [0];
+            end
+            if(isnan(obj.K_coordinates.k{2}))
+                obj.K_coordinates.k{2} = [0];
+            end
             obj.K_coordinates.dims = k_dim;
             obj.spacial_coordinates.x = -obj.FoV.x/2+obj.pixel_width.x/2:obj.pixel_width.x:obj.FoV.x/2-obj.pixel_width.x/2;
             obj.spacial_coordinates.y = -obj.FoV.y/2+obj.pixel_width.y/2:obj.pixel_width.y:obj.FoV.y/2-obj.pixel_width.y/2;
