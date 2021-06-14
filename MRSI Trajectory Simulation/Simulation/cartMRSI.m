@@ -10,9 +10,9 @@
 function [obj] = cartMRSI(par)
 
     if(nargin < 1)
-        par.dwellTime = 50/100000; %us ->s
+        par.sw = 2500; %[Hz]
         par.Fov = [0.2, 0.2]; %FoV in m
-        par.imageSize = [9, 9, 128]; %voxels in the x and y direction
+        par.imageSize = [16, 16, 1024]; %number of voxels in the x and y direction
     end
     %calculating the same image parameters as the default parameters in Rosette.m 
 
@@ -24,8 +24,9 @@ function [obj] = cartMRSI(par)
     deltaKY = 1/Fov(2); %[m^-1]
     FovKX = 1/deltaFovX; %[m^-1]
     FovKY = 1/deltaFovY; %[m^-1]
-    readOutTime = par.dwellTime*(par.imageSize(3)-1); %[s]
-    dwellTime = par.dwellTime; %[s]
+    dwellTime = 1/par.sw; %[s]
+    readOutTime = dwellTime*(par.imageSize(3)-1); %[s]
+    scanTime = readOutTime*par.imageSize(1)*par.imageSize(2);
     
     %calculating trajectory for each shot
     kSpaceX = -FovKX/2+deltaKX/2:deltaKX:FovKX/2-deltaKX/2;
@@ -48,6 +49,6 @@ function [obj] = cartMRSI(par)
     %add plus one because the zeroth point is counted
     traj = repmat(traj, [1,readOutTime/dwellTime + 1]);
     
-    obj = Trajectory(traj, par.imageSize, Fov, dwellTime, ["x", "y"], 1/dwellTime, readOutTime);
+    obj = Trajectory(traj, par.imageSize, Fov, dwellTime, ["x", "y"], par.sw);
 end
     

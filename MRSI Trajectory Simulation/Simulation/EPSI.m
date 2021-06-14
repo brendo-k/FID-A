@@ -18,11 +18,11 @@
 function [obj] = EPSI(par)
 
     if(nargin < 1)
-        par.dwellTime = 31.25e-6; %[s]
-        par.Fov = [0.18, 0.18]; %FoV in m in the x and y directions
-        par.imageSize = [32, 32, 40]; %voxels resolution in the x and y and spectral dimension
+        par.sw = 2500; %[Hz]
+        par.Fov = [0.2, 0.2]; %FoV in m in the x and y directions
+        par.imageSize = [16, 16, 1024]; %voxels resolution in the x and y and spectral dimension
     end
-
+    gamma = 42.577478518e6;
     %updating local variables from parameters
     Fov = par.Fov;
     deltaFovX = Fov(1)/par.imageSize(1); %[m]
@@ -31,7 +31,7 @@ function [obj] = EPSI(par)
     deltaKY = 1/Fov(2); %[1/m]
     FovKX = 1/deltaFovX; %[1/m]
     FovKY = 1/deltaFovY; %[1/m]
-    dwellTime = par.dwellTime; %[s]
+    dwellTime = 1/(gamma; %[s]
     par.sw = 1/(dwellTime*par.imageSize(1)*2); %[Hz]
     
     %calculating trajectory for each shot

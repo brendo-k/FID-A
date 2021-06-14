@@ -15,11 +15,8 @@ classdef Trajectory
     end
     methods
         function obj = Trajectory(k_trajectory, imageSize, FoV, dwellTime, ...
-            k_dim, sw, repetitionTime)
-            
-            if exist('repetitionTime', 'var')
-                obj.repetitionTime = repetitionTime;
-            end
+            k_dim, sw)
+       
             obj.k_trajectory  = k_trajectory;
             obj.pixel_width.x = FoV(1)/imageSize(1);
             obj.pixel_width.y = FoV(2)/imageSize(2);

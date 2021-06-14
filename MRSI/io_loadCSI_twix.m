@@ -58,9 +58,27 @@ sqzDims=twix_obj.image.sqzDims;
 %to find the correct sequence name.  
  sequence=twix_obj.hdr.Config.SequenceFileName;  
 
- isSiemens=(contains(sequence,'svs_se') ||... %Is this the Siemens PRESS seqeunce?
-            contains(sequence,'svs_st')) && ... % or the Siemens STEAM sequence?
-             ~contains(sequence,'eja_svs');    %And make sure it's not 'eja_svs_steam'.
+%Try to find out what sequnece this is:
+isSpecial=contains(sequence,'rm_special') ||...  %Is this Ralf Mekle's SPECIAL sequence?
+            contains(sequence,'vq_special');  %or the CIBM SPECIAL sequence?
+isjnSpecial=contains(sequence,'jn_svs_special') ||...  %or Jamie Near's SPECIAL sequence?
+            contains(sequence,'md_Adiab_Special') ||... %or Masoumeh Dehghani's Adiabatic SPECIAL sequence?
+            contains(sequence,'md_Special') ||... %or another version of Masoumeh Dehghani's SPECIAL sequence?
+            contains(sequence,'md_Inv_special'); %or Masoumeh Dehghani's Inversion Recovery SPECIAL sequence?
+isjnMP=contains(sequence,'jn_MEGA_GABA'); %Is this Jamie Near's MEGA-PRESS sequence?
+isjnseq=contains(sequence,'jn_') ||... %Is this another one of Jamie Near's sequences 
+        contains(sequence,'md_');      %or a sequence derived from Jamie Near's sequences (by Masoumeh Dehghani)?
+isWIP529=contains(sequence,'edit_529'); %Is this WIP 529 (MEGA-PRESS)?
+isWIP859=contains(sequence,'edit_859'); %Is this WIP 859 (MEGA-PRESS)?
+isMinn=contains(sequence,'eja_svs_'); %Is this one of Eddie Auerbach's (CMRR, U Minnesota) sequences?
+isSiemens=(contains(sequence,'svs_se') ||... %Is this the Siemens svs PRESS seqeunce?
+            contains(sequence,'csi_se') ||... %Or the Siemens CSI PRESS sequence?
+            contains(sequence,'svs_st') || ... % Or the Siemens svs STEAM sequence?
+            contains(sequence,'csi_st')) && ... % Or the Siemens CSI STEAM sequence?
+            ~contains(sequence,'eja_svs');    %And make sure it's not 'eja_svs_steam', which also contains the string 'svs_st'.
+        
+%Is this a CSI sequence?:
+isCSI=contains(sequence,'csi') || contains(sequence,'CSI');
 
 
 %Squeeze the data to remove singleton dims
@@ -96,7 +114,6 @@ if ~isempty(dims.t)
     %remove the time dimension from the dimsToIndex vector
     dimsToIndex=dimsToIndex(dimsToIndex~=dims.t);
 else
-    dims.t=0;
     error('ERROR:  Spectrom contains no time domain information!!');
 end
 
@@ -156,10 +173,36 @@ end
 dims.z = find(strcmp(sqzDims,'Sli'));
 if ~isempty(dims.z)
     %remove the coils dimension from the dimsToIndex vector
-    dimsToIndex=dimsToIndex(dimsToIndex~=dims.y);
+    dimsToIndex=dimsToIndex(dimsToIndex~=dims.z);
 else
     dims.z=0;
 end
+
+if ~isempty(dimsToIndex)
+    %Now index the dimension of the sub-spectra
+    if isjnseq  || isSpecial
+        if strcmp(version,'vd') || strcmp(version,'ve')
+            dims.subSpecs=find(strcmp(sqzDims,'Set'));
+        else
+            dims.subSpecs=find(strcmp(sqzDims,'Ida'));
+        end
+    elseif isWIP529 || isMinn
+        dims.subSpecs=find(strcmp(sqzDims,'Eco'));
+    elseif isWIP859
+        dims.subSpecs=find(strcmp(sqzDims,'Ide'));
+    else
+        dims.subSpecs=dimsToIndex(1);
+    end
+    if ~isempty(dims.subSpecs)
+        %remove the sub-spectra dimension from the dimsToIndex vector
+        dimsToIndex=dimsToIndex(dimsToIndex~=dims.subSpecs);
+    else
+        dims.subSpecs=0;
+    end
+else
+    dims.subSpecs=0;
+end
+
 %And if any further dimensions exist after indexing the sub-spectra, call
 %these the 'extras' dimension.  
 if ~isempty(dimsToIndex)
@@ -180,19 +223,25 @@ end
 %the order to be as follows:  
 %   1) time domain data.  
 %   2) coils.
-%   4) k_x.
-%   5) k_y.
-%   6) extras
-dimsArray = [dims.t dims.coils, dims.x dims.y dims.extras];
-dimsCell = ["t", "coils", "x", "y", "extras"];
+%   3) averages.
+%   4) subSpecs.
+%   5) csi_x.
+%   6) csi_y.
+%   7) extras.
+dimsArray = [dims.t dims.coils, dims.averages dims.subSpecs dims.x dims.y dims.extras];
+leftover = [];
+counter = 1;
+fields = ["t", "coils", "averages", "subSpecs", "x", "y", "extras"];
+dimsCell = strings(1,1);
 for i = 1:numel(dimsArray)
-    if(dimsArray(i) == 0)
-        dimsArray(i) = [];
-        dimsCell(i) = [];
+    if(dimsArray(i) ~= 0)
+        leftover(counter) = dimsArray(i);
+        dimsCell(counter) = fields(i);
+        counter = counter + 1;
     end
 end
-fids = permute(fids, dimsArray);
-for i = 1:size(dimsArray, 2)
+fids = permute(fids, leftover);
+for i = 1:size(leftover, 2)
     dims.(dimsCell(i)) = i;
 end
 
@@ -208,14 +257,55 @@ fovX = twix_obj.hdr.MeasYaps.sSliceArray.asSlice{1}.dReadoutFOV;
 fovY = twix_obj.hdr.MeasYaps.sSliceArray.asSlice{1}.dPhaseFOV;
 fovZ = twix_obj.hdr.MeasYaps.sSliceArray.asSlice{1}.dThickness;
 
+%Find the number of averages.  'averages' will specify the current number
+%of averages in the dataset as it is processed, which may be subject to
+%change.  'rawAverages' will specify the original number of acquired 
+%averages in the dataset, which is unchangeable.
+if dims.subSpecs ~=0
+    if dims.averages~=0
+        averages=sz(dims.averages)*sz(dims.subSpecs);
+        rawAverages=averages;
+    else
+        averages=sz(dims.subSpecs);
+        rawAverages=1;
+    end
+else
+    if dims.averages~=0
+        averages=sz(dims.averages);
+        rawAverages=averages;
+    else
+        averages=1;
+        rawAverages=1;
+    end
+end
+
+%Find the number of subspecs.  'subspecs' will specify the current number
+%of subspectra in the dataset as it is processed, which may be subject to
+%change.  'rawSubspecs' will specify the original number of acquired 
+%subspectra in the dataset, which is unchangeable.
+if dims.subSpecs ~=0
+    subspecs=sz(dims.subSpecs);
+    rawSubspecs=subspecs;
+else
+    subspecs=1;
+    rawSubspecs=subspecs;
+end
+
 %Get TxFrq
 txfrq=twix_obj.hdr.Meas.Frequency;
 
-if isSiemens
+if isWIP529 || isWIP859
+    leftshift = twix_obj.image.cutOff(1,1);
+elseif isSiemens
     leftshift = twix_obj.image.freeParam(1);
+elseif isMinn
+    leftshift = twix_obj.image.iceParam(5,1);
 else
     leftshift = twix_obj.image.freeParam(1);
 end
+
+%date = getfield(regexp(twix_obj.hdr.MeasYaps.tReferenceImage0, ...
+%'^".*\.(?<DATE>\d{8})\d*"$', 'names'), 'DATE');  %Franck Lamberton
 
 %****************************************************************
 
@@ -240,6 +330,12 @@ out.fovY = fovY;
 out.fovZ = fovZ;
 out.deltaX = fovX/size(fids, dims.x);
 out.deltaY = fovY/size(fids, dims.y);
+out.averages = averages;
+out.rawAverages = rawAverages;
+out.subspecs = subspecs;
+out.rawSubspecs = rawSubspecs;
+
+out.pointsToLeftshift=leftshift;
 if dims.z == 0
     out.deltaZ = fovZ;
 else

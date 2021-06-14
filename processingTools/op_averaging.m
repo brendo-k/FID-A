@@ -54,6 +54,16 @@ else
     else
         dims.subSpecs=in.dims.subSpecs;
     end
+    if in.dims.x>in.dims.averages
+        dims.x=in.dims.x-1;
+    else
+        dims.x=in.dims.x;
+    end
+    if in.dims.y>in.dims.averages
+        dims.y=in.dims.y-1;
+    else
+        dims.y=in.dims.y;
+    end
     if in.dims.extras>in.dims.averages
         dims.extras=in.dims.extras-1;
     else
@@ -68,7 +78,10 @@ else
     %FILLING IN DATA STRUCTURE
     out=in;
     out.fids=fids;
-    out.specs=specs;
+    %If CSI sequence use op_CSIFourierTransform to get specs
+    if(~contains(lower(in.seq), 'csi'))
+        out.specs=specs;
+    end
     out.sz=sz;
     out.dims=dims;
     out.averages=1;

@@ -14,19 +14,12 @@
 % coilNum           = coilNum to plot if coils have not been combined.
 %                   (default value)  1 
 
-function overlay(plot_type, in, coilNum)
+function overlay(plot_type, in, ppmmin, ppmmax, coilNum)
 
 %call global variable from spm
 global st;
 %call global variable for MRSI object
 %(needed for callbacks) 
-global csi_obj;
-
-%replace global csi_obj if a new MRSI object is defined
-if exist('in', 'var')
-    csi_obj = in;
-end
-
 %default value of 1 for coilNum
 if ~exist('coilNum', 'var')
     coilNum = 1;
