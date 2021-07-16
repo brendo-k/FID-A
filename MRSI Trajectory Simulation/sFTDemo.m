@@ -68,7 +68,7 @@ toc
 FoVMask = EllipticalFilter(ones(Out.Par.DataSize(1:2)),[1 2],[1 1 1 Out.Par.DataSize(1)/2-1],1); 
 FoVMask = FoVMask(:);
 sft2_Oper(:,~logical(FoVMask(:))) = 0;
-rosetteFTOperator(~logical(FoVMask),:) = 0;
+%rosetteFTOperator(~logical(FoVMask),:) = 0;
 clear FoVMask;
 
 
@@ -102,18 +102,18 @@ clear OnesData OutOnesData Scale SpirPts
 In.Data = sft2_Oper*Image_GroundTruth(:);
 % PSF = reshape(In.Data, Out.Par.DataSize);
 
-kSpacePoints = size(testTraj,2)*size(testTraj,3);
+%kSpacePoints = size(testTraj,2)*size(testTraj,3);
 %PSF = rosetteFTOperator*ones(kSpacePoints, 1);
 %PSF = reshape(PSF, Out.Par.DataSize);
 [xq,yq] = meshgrid(1:.5:80, 1:.5:80);
 
 figure;
-vq = griddata(1:80, 1:80, real(PSF), xq, yq);
-subplot(1,2,1), mesh(xq, yq, vq), axis square, title('Point Spread Function')
-subplot (1,2,2), plot(testTraj(1,:,1), testTraj(2,:,1)), axis square, title("k space trajectory"), hold on
-for i = 2:par.nAngInts
-    plot(testTraj(1,:,i), testTraj(2,:,i))
-end
+%vq = griddata(1:80, 1:80, real(PSF), xq, yq);
+%subplot(1,2,1), mesh(xq, yq, vq), axis square, title('Point Spread Function')
+%subplot (1,2,2), plot(testTraj(1,:,1), testTraj(2,:,1)), axis square, title("k space trajectory"), hold on
+%for i = 2:par.nAngInts
+%    plot(testTraj(1,:,i), testTraj(2,:,i))
+%end
 hold off;
 
 figure;
@@ -181,34 +181,34 @@ Out3.Data = reshape(Out3.Data,Out3.Par.DataSize);
 
 %% Plot GroundTruth vs Reco
 
-% Trajectory
-% figure; 
-% %scatter(squeeze(Out.Traj.GM(1,1,:)),squeeze(Out.Traj.GM(2,1,:)),'b'), hold on   
-% %for AngIntNo = 1:In.Par.nAngInts
-%     scatter(squeeze(In.Traj.GM(1,:,AngIntNo)), squeeze(In.Traj.GM(2,:,AngIntNo)),'r')
-%     plot(squeeze(In.Traj.GM(1,:,AngIntNo)), squeeze(In.Traj.GM(2,:,AngIntNo)),'r')
-% end
-% hold off, axis square, title('Spiral Trajectory')
+%Trajectory
+figure;
+scatter(squeeze(Out.Traj.GM(1,1,:)),squeeze(Out.Traj.GM(2,1,:)),'b'), hold on
+for AngIntNo = 1:In.Par.nAngInts
+    scatter(squeeze(In.Traj.GM(1,:,AngIntNo)), squeeze(In.Traj.GM(2,:,AngIntNo)),'r')
+    plot(squeeze(In.Traj.GM(1,:,AngIntNo)), squeeze(In.Traj.GM(2,:,AngIntNo)),'r')
+end
+hold off, axis square, title('Spiral Trajectory')
 
-% % Test1
-% figure;
-% MinMax = [min(real(Out.Data(:))) max(real(Out.Data(:)))];
-% subplot(2,2,1), plot(abs(In.Data)), axis square, title('Test1: k-Space Data')
-% subplot(2,2,3), imagesc(real(Image_GroundTruth),MinMax), colorbar, axis square, title('Ground Truth Image')
-% subplot(2,2,4), imagesc(real(Out.Data),MinMax), colorbar, axis square, title('Reco1')
-% 
-% 
-% % Test2
-% figure;
-% subplot(2,2,1), plot(abs(In2.Data)), axis square, title('Test2: k-Space Data')
-% subplot(2,2,3), imagesc(real(Out2.GroundTruthData)), colorbar, axis square, title('Ground Truth Image')
-% subplot(2,2,4), imagesc(real(Out2.Data)), colorbar, axis square, title('Reco2')
-% 
-% 
-% % Test3
-% figure;
-% subplot(2,2,1), plot(abs(In3.Data)), axis square, title('Test3: k-Space Data')
-% subplot(2,2,2), imagesc(abs(Out3.Data-Out3.GroundTruthData)), colorbar, axis square, title('Error')
-% subplot(2,2,3), imagesc(real(Out3.GroundTruthData)), colorbar, axis square, title('Ground Truth Image')
-% subplot(2,2,4), imagesc(real(Out3.Data)), colorbar, axis square, title('Reco3')
+% Test1
+figure;
+MinMax = [min(real(Out.Data(:))) max(real(Out.Data(:)))];
+subplot(2,2,1), plot(abs(In.Data)), axis square, title('Test1: k-Space Data')
+subplot(2,2,3), imagesc(real(Image_GroundTruth),MinMax), colorbar, axis square, title('Ground Truth Image')
+subplot(2,2,4), imagesc(real(Out.Data),MinMax), colorbar, axis square, title('Reco1')
+
+
+% Test2
+figure;
+subplot(2,2,1), plot(abs(In2.Data)), axis square, title('Test2: k-Space Data')
+subplot(2,2,3), imagesc(real(Out2.GroundTruthData)), colorbar, axis square, title('Ground Truth Image')
+subplot(2,2,4), imagesc(real(Out2.Data)), colorbar, axis square, title('Reco2')
+
+
+% Test3
+figure;
+subplot(2,2,1), plot(abs(In3.Data)), axis square, title('Test3: k-Space Data')
+subplot(2,2,2), imagesc(abs(Out3.Data-Out3.GroundTruthData)), colorbar, axis square, title('Error')
+subplot(2,2,3), imagesc(real(Out3.GroundTruthData)), colorbar, axis square, title('Ground Truth Image')
+subplot(2,2,4), imagesc(real(Out3.Data)), colorbar, axis square, title('Reco3')
 

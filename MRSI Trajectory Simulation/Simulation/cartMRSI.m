@@ -12,7 +12,7 @@ function [obj] = cartMRSI(par)
     if(nargin < 1)
         par.sw = 2500; %[Hz]
         par.Fov = [0.2, 0.2]; %FoV in m
-        par.imageSize = [16, 16, 1024]; %number of voxels in the x and y direction
+        par.imageSize = [17, 17, 1024]; %number of voxels in the x and y direction
     end
     %calculating the same image parameters as the default parameters in Rosette.m 
 

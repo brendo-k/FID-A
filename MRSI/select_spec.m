@@ -15,6 +15,9 @@
 function select_spec(src,~) 
     %get global MRSI object
     global csi_obj;
+    global ppm_min;
+    global ppm_max;
+    global type;
     
     %only start if the users clicks with the right mouse button
     if ~strcmpi(get(gcbf,'SelectionType'),'alt')
@@ -56,10 +59,24 @@ function select_spec(src,~)
         end
         %hold the axis
         hold(ax, 'on')
-        %plot the selected MRSI spec.
-        xticks(ax, flip(csi_obj.ppm(1:250:end)))
-        xlim(ax, [csi_obj.ppm(end) csi_obj.ppm(1)]);
-        plot(ax, csi_obj.ppm, real(csi_obj.specs(:, col, row)))
+        %plot the selected MRSI spec.4
+        range_bool = csi_obj.ppm > ppm_min & csi_obj.ppm < ppm_max;
+        ppm = csi_obj.ppm(range_bool);
+        set(ax,'XDir','reverse')
+        xlim(ax, [ppm_min ppm_max]);
+        
+        switch(type)
+            case 'real'
+                specs = real(csi_obj.specs(range_bool, col, row));
+            case 'imaginary'
+                specs = imag(csi_obj.specs(range_bool, col, row));
+            case 'magnitude'
+                specs = abs(csi_obj.specs(range_bool, col, row));
+            otherwise
+                error("please enter a valid plot_type");
+        end
+        
+        plot(ax, ppm, specs)
         hold(ax, 'off')
         
     end 

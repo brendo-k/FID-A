@@ -18,19 +18,27 @@ function overlay(plot_type, in, ppmmin, ppmmax, coilNum)
 
 %call global variable from spm
 global st;
-%call global variable for MRSI object
-%(needed for callbacks) 
 %default value of 1 for coilNum
-if ~exist('coilNum', 'var')
-    coilNum = 1;
-end
 
-if ~exist('plot_type', 'var')
-    %default is to plot the real
-    plot_type = 'real';
-else
-    %ensure plot_type is lowercase
-    plot_type = char(plot_type);
+global type;
+global csi_obj;
+global ppm_min;
+global ppm_max;
+global coil;
+if(exist('plot_type', 'var'))
+    type = plot_type;
+end
+if(exist('in','var'))
+    csi_obj = in;
+end
+if(exist('ppmmin','var'))
+    ppm_min = ppmmin;
+end
+if(exist('ppmmax','var'))
+    ppm_max = ppmmax;
+end
+if(exist('coilNum','var'))
+    coil = coilNum;
 end
 
 %center in the dimensions (l-r,a-p,s-i)
@@ -43,31 +51,25 @@ resolution = (st.bb(2,:) - st.bb(1,:) + 1)/dims(:)';
 %plotted onto.
 bb = st.bb;
 
+range_bool = csi_obj.ppm >= ppm_min & csi_obj.ppm <= ppm_max;
+
+specs = permute(csi_obj.specs, nonzeros([csi_obj.dims.t, csi_obj.dims.x, csi_obj.dims.y, csi_obj.dims.coils, ...
+                           csi_obj.dims.averages]));
+specs = specs(range_bool, :,:);
+ppm = csi_obj.ppm(range_bool);
 
 %get tne yrange for scaling of the y axis to plot the specs 
-if strcmp(plot_type, 'real')
-    if(csi_obj.dims.coils == 0)
-        yrange=max(real(csi_obj.specs),[],'all') - min(real(csi_obj.specs),[],'all');
-    else
-        yrange=max(real(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(real(csi_obj.specs(:,coilNum,:,:)),[],'all');
-    end
-elseif strcmp(plot_type, 'imag')
-    if(csi_obj.dims.coils == 0)
-        yrange=max(imag(csi_obj.specs),[],'all') - min(imag(csi_obj.specs),[],'all');
-    else
-        yrange=max(imag(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(imag(csi_obj.specs(:,coilNum,:,:)),[],'all');
-    end
+if(strcmp(type, 'real'))
+    yrange = max(max(real(specs(:,:,:,coil)),[],1) - min(real(specs(:,:,:,coil)),[],1), [], 'all');
+elseif (strcmp(type, 'imag'))
+    yrange = max(max(imag(specs(:,:,:,coil)),[],1) - min(imag(specs(:,:,:,coil)),[],1), [], 'all');
 else
-    if(csi_obj.dims.coils == 0)
-        yrange=max(abs(csi_obj.specs),[],'all') - min(abs(csi_obj.specs),[],'all');
-    else
-        yrange=max(abs(csi_obj.specs(:,coilNum,:,:)),[],'all') - min(abs(csi_obj.specs(:,coilNum,:,:)),[],'all');
-    end
+    yrange = max(max(abs(specs(:,:,:,coil)),[],1) - min(abs(specs(:,:,:,coil)),[],1), [], 'all');
 end
     
 
 %scale factors to fit the spectral dimension at each (x,y) coordinates
-scalefactorX=(0.8*csi_obj.deltaX)/max(csi_obj.t);
+scalefactorX=(0.8*csi_obj.deltaX)/(ppm(end) - ppm(1));
 scalefactorY=(0.8*csi_obj.deltaY)/yrange;
 
 %set the x dimension and y dimension
@@ -75,57 +77,52 @@ xdim = csi_obj.dims.x;
 ydim = csi_obj.dims.y;
 
 %reduce the spec scales by scalefactorY
-tempSpec=op_ampScale(csi_obj,scalefactorY);
+specs = specs(:,:,:,coil).*scalefactorY;
 
 % %reverse the y dimension so plotting anterior = +y and posterior = -y
 % tempSpec.specs = flip(tempSpec.specs, ydim);
-
-%rearange dimensions so that we plot time, x, y
-dimsToPlot = [csi_obj.dims.t, xdim, ydim];
-extraDims = setdiff(numel(size(csi_obj.sz)), dimsToPlot);
-tempSpec = permute(tempSpec.specs, [dimsToPlot, extraDims]);
-tempSpec = reshape(tempSpec, [csi_obj.sz(dimsToPlot), prod(csi_obj.sz(extraDims))]);
-
-
 
 %set current axis object to be of the axial image. (st.vols{1}.ax{2} and
 %st.vols{1}.ax{3} are objects for the sagital and coronal)
 axes(st.vols{1}.ax{1}.ax)
 %delete previous MRSI plot on MRI
-h = findobj(gca,'Tag','csi_plot');
-delete(h)
-%hold axis
-hold on;
+
 %don't plot unless in the correct z position
 %(needs to be modified if 3D MRSI is to be done) 
+h = findobj(gca,'Tag','csi_plot');
+delete(h);
+specs = flip(specs,1);
 if(center(3) - csi_obj.deltaZ/2 < csi_obj.imageOrigin(3) && csi_obj.imageOrigin(3) < center(3) + csi_obj.deltaZ/2)
-    for x = 1:size(csi_obj.specs,xdim)
-        for y = 1:size(csi_obj.specs,ydim)
-            %first scale the ppm scale so that the range is correct;
-            time = csi_obj.t*scalefactorX;
-            %now shift it to the correct x-position;
-            time = time + (x-1)*csi_obj.deltaX - (0.8*csi_obj.deltaX)/2 + csi_obj.xCoordinates(1) - bb(1,1);
-            %check plottype
-            fids = tempSpec(:,x,y,coilNum);
-            
-            %plot whichever plot type is chosen
-            switch(plot_type)
-                case 'real'
-                    fids = real(fids);
-                case 'imaginary'
-                    fids = imag(fids);
-                case 'magnitude'
-                    fids = abs(fids);
-                otherwise
-                    error("please enter a valid plot_type");
+    
+    
+    %hold axis
+        hold on;
+        for x = 1:size(csi_obj.specs,xdim)
+            for y = 1:size(csi_obj.specs,ydim)
+                %first scale the ppm scale so that the range is correct;
+                ppm_plot = (ppm-ppm(1))*scalefactorX;
+                %now shift it to the correct x-position;
+                ppm_plot = ppm_plot + (x-1)*csi_obj.deltaX - (0.8*csi_obj.deltaX)/2 + csi_obj.xCoordinates(1) - bb(1,1);
+                %check plottype
+                
+                %plot whichever plot type is chosen
+                switch(type)
+                    case 'real'
+                        specs = real(specs);
+                    case 'imaginary'
+                        specs = imag(specs);
+                    case 'magnitude'
+                        specs = abs(specs);
+                    otherwise
+                        error("please enter a valid plot_type");
+                end
+                %Now start plotting
+                p = plot(gca, ppm_plot, specs(:,x,y) + (y-1)*csi_obj.deltaY + csi_obj.yCoordinates(1)+ -bb(1,2));
+                %set the label of the line object
+                set(p, 'Tag', 'csi_plot', 'HitTes', 'off');
             end
-            
-            %Now start plotting
-            p = plot(gca, time,fids + (y-1)*csi_obj.deltaY + csi_obj.yCoordinates(1)+ -bb(1,2));
-            %set the label of the line object
-            set(p, 'Tag', 'csi_plot', 'HitTes', 'off');
         end
-    end
+    
 end
 %stop holding
 hold off;

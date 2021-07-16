@@ -16,7 +16,7 @@
 %           
 % output:   in         = Twix object with new out.specs field of the
 %                         fourier transformed data
-function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, isCartesian)
+function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, k_file)
 %% Initalization and checks
     tic
     %default: doing fourier transform on untranformed dimensions    
@@ -34,8 +34,11 @@ function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, isCartesian)
             spectralFT = 0;
         end
     end
-    if ~exist('cartesian', 'var')
-        isCartesian = 1;
+    
+    if ~exist('k_file', 'var')
+        cartestian = 1;
+    else
+        cartestian = 0;
     end
     
     %checking if fourier transform is done alread in spectral dimension
@@ -61,9 +64,9 @@ function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, isCartesian)
         in.specs = fftshift(fft(in.specs,[],in.dims.t),in.dims.t);
         
         %lower bounds of frequency
-        lb = (-in.spectralwidth/2)+(in.spectralwidth/(2*in.sz(1)));
+        lb = (-in.spectralwidth/2)+(in.spectralwidth/(2*in.sz(in.dims.t)));
         %upper bounds of frequency
-        ub = (in.spectralwidth/2)-(in.spectralwidth/(2*in.sz(1)));
+        ub = (in.spectralwidth/2)-(in.spectralwidth/(2*in.sz(in.dims.t)));
         %frequency step 
         step = in.spectralwidth/(in.sz(1));
         
@@ -88,7 +91,7 @@ function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, isCartesian)
         yCoordinates = yCoordinates - in.imageOrigin(2);
 
         
-        if(isCartesian == 1)
+        if(cartestian == 1)
             %applying the fast fourier transform if k space is cartesian
             disp('Applying fast fourier transform');
             
@@ -105,58 +108,34 @@ function [in] = op_CSIFourierTransform(in, spatialFT, spectralFT, isCartesian)
             %cartesian
             %calculating kSpace trajectory for fourier transform (needs to
             %be updated for non cartesian coordinates)
-            [k_x,k_y] = meshgrid(in.k_XCoordinates, in.k_YCoordinates);
+            %lower bounds of frequency
+            lb = (-in.spectralwidth/2)+(in.spectralwidth/(2*in.sz(in.dims.t)));
+            %upper bounds of frequency
+            ub = (in.spectralwidth/2)-(in.spectralwidth/(2*in.sz(in.dims.t)));
+            step = in.spectralwidth/(length(in.t));
+            freq_range=lb:step:ub;
+            
+            [x,y,f] = meshgrid(xCoordinates, yCoordinates, freq_range);
             %trajectory of the cartesian trajectory. (needs to be found if
             %slow fourier transform is done on non cartesian data)
-            inTraj = [k_x(:), k_y(:)];
-
-            %calculating image coordinates to be fourier transformed onto
-            [spatialCoordinates, xCoordinates, yCoordinates] = op_calculateCartetianTrajectory(in);
+            out_traj = [x(:), y(:), f(:)];
+            in_traj = load_kspace_file(k_file);
 
             %creating fourier transform matrix for the spatial domain 
             %fourier transform applied by out = sftOperator*(fids at values at
             %inTraj)
-            sftOperator = sft2_Operator(inTraj, spatialCoordinates, 0, ...
-                [numel(in.k_XCoordinates), numel(in.k_YCoordinates)]);
+            sftOperator = sft2_Operator(in_traj, out_traj, 1);
 
-            %finding non spatial dimentions
-            dimensionNames = fieldnames(in.dims);
-            counter = 1;
-            for i = 1:numel(dimensionNames)
-                if (in.dims.(dimensionNames{i}) ~= 0)
-                    dimentionNumbers(counter) = in.dims.(dimensionNames{i}); 
-                    counter = counter + 1;
+            %permute so first 3 dimensions are x, y and t
+            fids = permute(in.specs, [in.dims.x, in.dims.y, in.dims.t, in.dims.coils, in.dims.averages]);
+            %reshape to vector or x,y, and t along the first diimension 
+            fids = reshape(fids, [in.sz(in.dims.x)*in.sz(in.dims.y)*in.dims.t, in.dims.coils, in.dims.averages]);
+            specs = ones(length(x(:)), in.sz(in.dims.coils), in.sz(in.dims.averages));
+            for coil = 1:in.sz(in.dims.coils)
+                for averages = 1:in.sz(in.dims.averages)
+                    specs(:, coil, averages) = sftOperator*fids(:, coil, averages);
                 end
             end
-            dimsToFourierTransform = [in.dims.x, in.dims.y];
-            dimentionNumbers = setdiff(dimentionNumbers, dimsToFourierTransform);
-
-            fids = in.specs;
-            fidsSize = size(in.specs);
-            permuteDim = [dimsToFourierTransform, dimentionNumbers];
-            permuteBack = ones([1, numel(permuteDim)]);
-            for i = 1:numel(permuteBack)
-                for j = 1:numel(permuteDim)
-                    if permuteDim(j) == i
-                        permuteBack(i) = j;
-                    end
-                end
-            end
-
-            %reshaping fids so it can be multiplied along x and y dimensions 
-            fids = permute(fids, permuteDim);
-            fids = reshape(fids, [prod(fidsSize(dimsToFourierTransform)), prod(fidsSize(dimentionNumbers))]);
-
-            %initalizing space for fourier transformed fids
-            final = ones(size(fids));
-            %multiplying fids by fourier transform matrix
-            for i = 1:size(fids, 2)    
-                final(:,i) = sftOperator*fids(:, i);
-            end
-            %reshaping and returning the dimensions to normal
-            final = reshape(final, [fidsSize(dimsToFourierTransform), fidsSize(dimentionNumbers)]);
-            in.specs = permute(final, permuteBack);
-
             
         end
     
@@ -211,8 +190,13 @@ function sft2_Oper = sft2_Operator(InTraj,OutTraj,Ift_flag)
     sft2_Oper = zeros([size(OutTraj,1) size(InTraj,1)]);
     for j=1:NOut
         sft2_Oper(j,:) = exp(Expy*(OutTraj(j,1)*InTraj(:,1) ...
-            + OutTraj(j,2)*InTraj(:,2)));
+            + OutTraj(j,2)*InTraj(:,2) + OutTraj(j,3)*InTraj(:,3)));
     end
 
+end
+
+function k_traj = load_kspace_file(file_name)
+    table = readtable(file_name, 'FileType', 'delimitedtext', 'NumHeaderLines', 1);
+    k_traj = horzcat(real(table2array(table(:, 2))), imag(table2array(table(:,2))), table2array(table(:,3)));
 end
 

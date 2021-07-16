@@ -90,6 +90,7 @@ function [H,d] = sim_Hamiltonian(sys,Bfield)
         H(n).Fx = sum(H(n).Ix, 3);
         H(n).Fy = sum(H(n).Iy, 3);
         H(n).Fz = sum(H(n).Iz, 3);
+        H(n).Trc = H(n).Fx + 1i*H(n).Fy;
         
         d{n} = H(n).Fz;
         %Store the spin-system scaling factor in the H structure, and scale the

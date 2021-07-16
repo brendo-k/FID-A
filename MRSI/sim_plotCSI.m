@@ -23,6 +23,8 @@
 
 function sim_plotCSI(in, ppmmin, ppmmax, complex_plot, coilNum)
 
+%Argument checks
+
 %check to see if coilNum has been defined
 if ~exist('coilNum','var')
     coilNum = 1;
@@ -54,35 +56,29 @@ if ~strcmpi(complex_plot, 'real') && ~strcmpi(complex_plot, 'imag') && ~strcmpi(
     error("please input 'real', 'imag' or 'abs'")
 end
 
+%check if ppm exists to plot
 if ~isfield(in, 'ppm')
     range_bool = in.t > ppmmin & in.t < ppmmax;
     ppm = in.t(range_bool);
 else
+    %if ppm doesn't exist plot time domain
     range_bool = in.ppm > ppmmin & in.ppm < ppmmax;
     ppm = in.ppm(range_bool);
 end
 
-specs = in.specs(range_bool, :,:);
+specs = permute(in.specs, nonzeros([in.dims.t, in.dims.x, in.dims.y, in.dims.coils, ...
+                           in.dims.averages]));
+specs = specs(range_bool, :,:);
 
 %get lowercase
 complex_plot = lower(complex_plot);
 
-if(in.dims.coils == 0)
-    if(strcmp(complex_plot, 'real'))
-        yrange = max(max(real(specs),[],1) - min(real(specs),[],1), [], 'all');
-    elseif (strcmp(complex_plot, 'imag'))
-        yrange = max(max(imag(specs),[],1) - min(imag(specs),[],1), [], 'all');
-    else
-        yrange = max(max(abs(specs),[],1) - min(abs(specs),[],1), [], 'all');
-    end
+if(strcmp(complex_plot, 'real'))
+    yrange = max(max(real(specs),[],1) - min(real(specs),[],1), [], 'all');
+elseif (strcmp(complex_plot, 'imag'))
+    yrange = max(max(imag(specs),[],1) - min(imag(specs),[],1), [], 'all');
 else
-    if(strcmp(complex_plot, 'real'))
-        yrange=max(real(specs(:,coilNum,:,:)),[],'all') - min(real(specs(:,coilNum,:,:)),[],'all');
-    elseif (strcmp(complex_plot, 'imag'))
-        yrange=max(imag(specs(:,coilNum,:,:)),[],'all') - min(imag(specs(:,coilNum,:,:)),[],'all');
-    else
-        yrange=max(abs(specs(:,coilNum,:,:)),[],'all') - min(abs(specs(:,coilNum,:,:)),[],'all');
-    end
+    yrange = max(max(abs(specs),[],1) - min(abs(specs),[],1), [], 'all');
 end
 
 %scale factors to fit at each (x,y) coordinates
@@ -92,7 +88,6 @@ specs = specs.*scalefactorY;
 %scale the intensity of the specs to the scalefactorY
 
 %flip the specs along the y axis 
-specs = flip(specs, in.dims.y);
 
 tempSpec = specs;
 
@@ -114,11 +109,11 @@ for x = 1:size(specs,in.dims.x)
         ppm_plot = ppm_plot + (x-1)*in.deltaX - (0.8*in.deltaX)/2 + in.xCoordinates(1);
         %Now start plotting
         if(strcmp(complex_plot, 'real'))
-            plot(ppm_plot, real(tempSpec(:,x,y,coilNum)) - real(tempSpec(1,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+            plot(ppm_plot, flip(real(tempSpec(:,x,y,coilNum)) - real(tempSpec(1,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1)));
         elseif(strcmp(complex_plot, 'imag'))
-            plot(ppm_plot, imag(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+            plot(ppm_plot, flip(imag(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1)));
         else
-            plot(ppm_plot, abs(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1));
+            plot(ppm_plot, flip(abs(tempSpec(:,x,y,coilNum)) + (y-1)*in.deltaY + in.yCoordinates(1)));
         end
         
     end

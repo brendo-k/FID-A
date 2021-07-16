@@ -15,15 +15,14 @@
 %                       (default value = 1)
 
 
-function sim_CSIoverlayMRI(mriFileName, in, ppmmin, ppmmax, coilNum)
+function sim_CSIoverlayMRI(mriFileName, in, coilNum)
 
 if ~exist('spm_image', 'file')
     error('please add spm12 to your path before continuing');
 end
 %call spm global variable
 global st
-global csi_obj 
-csi_obj = in;
+
 if ~exist('coliNum', 'var')
     coilNum = 1;
 end
@@ -53,60 +52,57 @@ selector = uicontrol('Parent',st.fig,'Units','Pixels','Position',[320 405 100 20
     'Style','Popupmenu','String',labels);
 
 %selector callback function
-selector.Callback = @selection; 
+selector.Callback = @selection;
 
-ppm_min_control = uicontrol('Parent', st.fig, 'Units', 'Pixels', 'Position', [100, 405, 50, 20],...
-    'Style', 'edit', 'String', 'ppmmin', 'Tag', 'min');
-ppm_min_control.Callback = @set_max;
-    function set_max(src, event) 
-        max_obj = findobj('Tag', 'max');
-        max_obj.String
-        ppm_min = str2num(src.String); 
-        ppm_max = str2num(max_obj.String); 
-        if(ppm_min ~= [] && ppm_max ~= [])
-            if(ppm_min <= ppm_max)
-                plot_obj = findobj('Tag', 'plot_type');
-                cur_type = plot_obj.String{plot_type.Value};
-                overlay(cur_type, csi_obj, ppm_min, ppm_max, coilNum);
-            end
-        end
-    end
-
-ppm_max_control = uicontrol('Parent', st.fig, 'Units', 'Pixels', 'Position', [50, 405, 50, 20],...
-    'Style', 'edit', 'String', 'ppmmin', 'Tag', 'max');
-ppm_max_control.Callback = @set_min;
-    function set_min(src, event) 
+ppm_max_control = uicontrol('Parent', st.fig, 'Units', 'Pixels', 'Position', [100, 405, 50, 20],...
+    'Style', 'edit', 'String', 'ppmmax', 'Tag', 'max');
+ppm_max_control.Callback = @set_max;
+    function set_max(src, ~)
         min_obj = findobj('Tag', 'min');
-        min_obj.String
-        ppm_max = str2num(src.String); 
-        ppm_min = str2num(max_obj.String); 
-        if(ppm_min ~= [] && ppm_max ~= [])
+        min_obj.String;
+        ppm_max = str2double(src.String);
+        ppm_min = str2double(min_obj.String);
+        if(~isempty(ppm_min) && ~isempty(ppm_max))
             if(ppm_min <= ppm_max)
                 plot_obj = findobj('Tag', 'plot_type');
                 cur_type = plot_obj.String{plot_type.Value};
-                overlay(cur_type, csi_obj, ppm_min, ppm_max, coilNum);
+                overlay(cur_type, in, ppm_min, ppm_max, coilNum);
+            end
+        end
+    end
+   
+
+ppm_min_control = uicontrol('Parent', st.fig, 'Units', 'Pixels', 'Position', [50, 405, 50, 20],...
+    'Style', 'edit', 'String', 'ppmmin', 'Tag', 'min');
+ppm_min_control.Callback = @set_min;
+     function set_min(src, ~)
+        max_obj = findobj('Tag', 'max');
+        max_obj.String;
+        ppm_min = str2double(src.String);
+        ppm_max = str2double(max_obj.String);
+        if(~isempty(ppm_min) && ~isempty(ppm_max))
+            if(ppm_min <= ppm_max)
+                plot_obj = findobj('Tag', 'plot_type');
+                cur_type = plot_obj.String{plot_type.Value};
+                overlay(cur_type, in, ppm_min, ppm_max, coilNum);
             end
         end
     end
 
-    
+
 %creates a dropdown menu in the figure to decide to plot real, imaginary,
-%or magnitud 
+%or magnitud
 plot_type = uicontrol('Parent',st.fig,'Units','Pixels','Position',[200 405 100 20],...
     'Style','Popupmenu','String',plot_labels, 'Tag', 'plot_type');
 %assigning callback method used to change the plotting type
 plot_type.Callback = @change_plot;
-    %the callback method used to change the plotting type
+%the callback method used to change the plotting type
     function change_plot(src,~)
-        ppm_min = findobj('Tag', 'min').String
-        ppm_max = findobj('Tag', 'max').String
-        if(str2num(ppm_min) ~= [] && str2num(ppm_max) ~= [])
-            overlay(src.String{src.Value}, csi_obj, ppm_min, ppm_max, coilNum);
-        end
+        overlay(src.String{src.Value});
     end
-%plot the MRSI onto the spm mri graphic along the axial dimension.    
-overlay('real', csi_obj, min(in.ppm), max(in.ppm), coilNum);
+%plot the MRSI onto the spm mri graphic along the axial dimension.
+overlay('real', in, min(in.ppm), max(in.ppm), coilNum);
 end
 
 
-    
+
